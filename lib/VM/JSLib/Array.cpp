@@ -143,7 +143,6 @@ Handle<JSObject> createArrayConstructor(Runtime *runtime) {
       arrayIsArray,
       1);
 
-#ifndef HERMESVM_USE_JS_LIBRARY_IMPLEMENTATION
   defineMethod(
       runtime,
       arrayPrototype,
@@ -295,7 +294,6 @@ Handle<JSObject> createArrayConstructor(Runtime *runtime) {
         arrayFrom,
         1);
   }
-#endif // HERMESVM_USE_JS_LIBRARY_IMPLEMENTATION
 
   return cons;
 }
@@ -1590,7 +1588,6 @@ arrayPrototypeIterator(void *ctx, Runtime *runtime, NativeArgs args) {
   return JSArrayIterator::create(runtime, obj, kind).getHermesValue();
 }
 
-#ifndef HERMESVM_USE_JS_LIBRARY_IMPLEMENTATION
 CallResult<HermesValue>
 arrayPrototypeSlice(void *, Runtime *runtime, NativeArgs args) {
   GCScope gcScope(runtime);
@@ -3556,7 +3553,6 @@ CallResult<HermesValue> arrayFrom(void *, Runtime *runtime, NativeArgs args) {
   // 19. Return A.
   return A.getHermesValue();
 }
-#endif // HERMESVM_USE_JS_LIBRARY_IMPLEMENTATION
 
 } // namespace vm
 } // namespace hermes

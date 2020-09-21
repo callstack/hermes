@@ -468,7 +468,7 @@ try {
 } catch (e) {
   print (e);
 }
-// CHECK-NEXT: SyntaxError: Invalid RegExp: Invalid flags 'undefined'
+// CHECK-NEXT: SyntaxError: Invalid RegExp: Invalid flags
 // actual undefined flag would result in empty pattern.
 var obj = {
   get [Symbol.match]() { return () => 1 }
@@ -542,4 +542,8 @@ print(/-/[Symbol.split]('a-b-c'));
 
 // Check UTF-16 string matching executes correctly
 print(/abc/u.exec("\u20ac\u20ac\u20ac\u20ac"));
+// CHECK-LABEL: null
+
+// Check that lookbehind searches stay within bounds
+print(/(?<=a)/u[Symbol.match](["\u00E9",34534502349000]))
 // CHECK-LABEL: null

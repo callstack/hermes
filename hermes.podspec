@@ -13,7 +13,7 @@ end
 
 Pod::Spec.new do |spec|
   spec.name        = "hermes"
-  spec.version     = "0.5.0"
+  spec.version     = "0.6.0"
   spec.summary     = "Hermes is a small and lightweight JavaScript engine optimized for running React Native."
   spec.description = "Hermes is a JavaScript engine optimized for fast start-up of React Native apps. It features ahead-of-time static optimization and compact bytecode."
   spec.homepage    = "https://hermesengine.dev"
@@ -40,12 +40,12 @@ Pod::Spec.new do |spec|
     . ./utils/build-apple-framework.sh
 
     # If universal framework for iOS does not exist, build one
-    # if [ ! -d destroot/Library/Frameworks/iphoneos/hermes.framework ]; then
-    #   build_apple_framework "iphoneos" "armv7;armv7s;arm64" "#{HermesHelper::IOS_DEPLOYMENT_TARGET}"
-    #   build_apple_framework "iphonesimulator" "x86_64;i386" "#{HermesHelper::IOS_DEPLOYMENT_TARGET}"
-    
+    if [ ! -d destroot/Library/Frameworks/iphoneos/hermes.framework ]; then
+      build_apple_framework "iphoneos" "armv7;armv7s;arm64" "#{HermesHelper::IOS_DEPLOYMENT_TARGET}"
+      build_apple_framework "iphonesimulator" "x86_64;i386" "#{HermesHelper::IOS_DEPLOYMENT_TARGET}"
+
       create_universal_framework "iphoneos" "iphonesimulator"
-    # fi
+    fi
 
     # If MacOS framework does not exist, build one
     if [ ! -d destroot/Library/Frameworks/macosx/hermes.framework ]; then

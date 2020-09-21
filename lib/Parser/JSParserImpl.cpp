@@ -3167,6 +3167,10 @@ Optional<ESTree::Node *> JSParserImpl::parseCallExpression(
       auto debugLoc = tok_->getStartLoc();
       ESTree::NodeList argList;
       SMLoc endLoc;
+
+      // parseArguments can result in another call to parseCallExpression
+      // without parsing another primary or declaration.
+      CHECK_RECURSION;
       if (!parseArguments(argList, endLoc))
         return None;
 
@@ -4820,10 +4824,12 @@ Optional<ESTree::Node *> JSParserImpl::parseAssignmentExpression(
     auto optYieldExpr = parseYieldExpression(param.get(ParamIn));
     if (!optYieldExpr)
       return None;
-    assert(
-        checkEndAssignmentExpression() &&
-        "invalid end token in AssignmentExpression");
-    return *optYieldExpr;
+    ESTree::YieldExpressionNode *yieldExpr = *optYieldExpr;
+    if (!checkEndAssignmentExpression()) {
+      error(tok_->getStartLoc(), "unexpected token after yield expression");
+      return None;
+    }
+    return yieldExpr;
   }
 
   SMLoc startLoc = tok_->getStartLoc();

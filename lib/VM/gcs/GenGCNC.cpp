@@ -1409,81 +1409,78 @@ void GenGC::deserializeEnd() {
 }
 #endif
 
-void GenGC::printStats(llvh::raw_ostream &os, bool trailingComma) {
-  if (!recordGcStats_) {
-    return;
-  }
-  GCBase::printStats(os, true);
-  os << "\t\"specific\": {\n"
-     << "\t\t\"collector\": \"noncontig-generational\",\n"
-     << "\t\t\"stats\": {\n"
-     << "\t\t\t\"ygNumCollections\": "
-     << youngGenCollectionCumStats_.numCollections << ",\n"
-     << "\t\t\t\"ygTotalGCTime\": "
-     << formatSecs(youngGenCollectionCumStats_.gcWallTime.sum()).secs << ",\n"
-     << "\t\t\t\"ygAvgGCPause\": "
-     << formatSecs(youngGenCollectionCumStats_.gcWallTime.average()).secs
-     << ",\n"
-     << "\t\t\t\"ygMaxGCPause\": "
-     << formatSecs(youngGenCollectionCumStats_.gcWallTime.max()).secs << ",\n"
-     << "\t\t\t\"ygTotalGCCPUTime\": "
-     << formatSecs(youngGenCollectionCumStats_.gcCPUTime.sum()).secs << ",\n"
-     << "\t\t\t\"ygAvgGCCPUPause\": "
-     << formatSecs(youngGenCollectionCumStats_.gcCPUTime.average()).secs
-     << ",\n"
-     << "\t\t\t\"ygMaxGCCPUPause\": "
-     << formatSecs(youngGenCollectionCumStats_.gcCPUTime.max()).secs << ",\n"
-     << "\t\t\t\"ygFinalSize\": "
-     << formatSize(youngGenCollectionCumStats_.finalHeapSize).bytes << ",\n";
+void GenGC::printStats(JSONEmitter &json) {
+  GCBase::printStats(json);
+  json.emitKey("specific");
+  json.openDict();
+  json.emitKeyValue("collector", "noncontig-generational");
 
-  youngGen_.printStats(os, /*trailingComma*/ true);
-
-  os << "\t\t\t\"fullNumCollections\": "
-     << fullCollectionCumStats_.numCollections << ",\n"
-     << "\t\t\t\"fullTotalGCTime\": "
-     << formatSecs(fullCollectionCumStats_.gcWallTime.sum()).secs << ",\n"
-     << "\t\t\t\"fullAvgGCPause\": "
-     << formatSecs(fullCollectionCumStats_.gcWallTime.average()).secs << ",\n"
-     << "\t\t\t\"fullMaxGCPause\": "
-     << formatSecs(fullCollectionCumStats_.gcWallTime.max()).secs << ",\n"
-     << "\t\t\t\"fullTotalGCCPUTime\": "
-     << formatSecs(fullCollectionCumStats_.gcCPUTime.sum()).secs << ",\n"
-     << "\t\t\t\"fullAvgGCCPUPause\": "
-     << formatSecs(fullCollectionCumStats_.gcCPUTime.average()).secs << ",\n"
-     << "\t\t\t\"fullMaxGCCPUPause\": "
-     << formatSecs(fullCollectionCumStats_.gcCPUTime.max()).secs << ",\n"
-     << "\t\t\t\"fullFinalSize\": "
-     << formatSize(fullCollectionCumStats_.finalHeapSize).bytes << ",\n";
-
-  printFullCollectionStats(os, /*trailingComma*/ false);
-  os << "\t\t}\n"
-     << "\t},\n";
-  gcCallbacks_->printRuntimeGCStats(os);
-  if (trailingComma) {
-    os << ",";
-  }
-  os << "\n";
+  json.emitKey("stats");
+  json.openDict();
+  json.emitKeyValue(
+      "ygNumCollections", youngGenCollectionCumStats_.numCollections);
+  json.emitKeyValue(
+      "ygTotalGCTime",
+      formatSecs(youngGenCollectionCumStats_.gcWallTime.sum()).secs);
+  json.emitKeyValue(
+      "ygAvgGCPause",
+      formatSecs(youngGenCollectionCumStats_.gcWallTime.average()).secs);
+  json.emitKeyValue(
+      "ygMaxGCPause",
+      formatSecs(youngGenCollectionCumStats_.gcWallTime.max()).secs);
+  json.emitKeyValue(
+      "ygTotalGCCPUTime",
+      formatSecs(youngGenCollectionCumStats_.gcCPUTime.sum()).secs);
+  json.emitKeyValue(
+      "ygAvgGCCPUPause",
+      formatSecs(youngGenCollectionCumStats_.gcCPUTime.average()).secs);
+  json.emitKeyValue(
+      "ygMaxGCCPUPause",
+      formatSecs(youngGenCollectionCumStats_.gcCPUTime.max()).secs);
+  json.emitKeyValue(
+      "ygFinalSize",
+      formatSize(youngGenCollectionCumStats_.finalHeapSize).bytes);
+  youngGen_.printStats(json);
+  json.emitKeyValue(
+      "fullNumCollections", fullCollectionCumStats_.numCollections);
+  json.emitKeyValue(
+      "fullTotalGCTime",
+      formatSecs(fullCollectionCumStats_.gcWallTime.sum()).secs);
+  json.emitKeyValue(
+      "fullAvgGCPause",
+      formatSecs(fullCollectionCumStats_.gcWallTime.average()).secs);
+  json.emitKeyValue(
+      "fullMaxGCPause",
+      formatSecs(fullCollectionCumStats_.gcWallTime.max()).secs);
+  json.emitKeyValue(
+      "fullTotalGCCPUTime",
+      formatSecs(fullCollectionCumStats_.gcCPUTime.sum()).secs);
+  json.emitKeyValue(
+      "fullAvgGCCPUPause",
+      formatSecs(fullCollectionCumStats_.gcCPUTime.average()).secs);
+  json.emitKeyValue(
+      "fullMaxGCCPUPause",
+      formatSecs(fullCollectionCumStats_.gcCPUTime.max()).secs);
+  json.emitKeyValue(
+      "fullFinalSize", formatSize(fullCollectionCumStats_.finalHeapSize).bytes);
+  printFullCollectionStats(json);
+  json.closeDict();
+  json.closeDict();
 }
 
-void GenGC::printFullCollectionStats(llvh::raw_ostream &os, bool trailingComma)
-    const {
+void GenGC::printFullCollectionStats(JSONEmitter &json) const {
   double fullSurvivalPct = 0.0;
   if (cumPreBytes_ > 0) {
     fullSurvivalPct = 100.0 * static_cast<double>(cumPostBytes_) /
         static_cast<double>(cumPreBytes_);
   }
 
-  os << "\t\t\t\"fullMarkRootsTime\": " << markRootsSecs_ << ",\n"
-     << "\t\t\t\"fullMarkTransitiveTime\": " << markTransitiveSecs_ << ",\n"
-     << "\t\t\t\"fullSweepTime\": " << sweepSecs_ << ",\n"
-     << "\t\t\t\"fullUpdateRefsTime\": " << updateReferencesSecs_ << ",\n"
-     << "\t\t\t\"fullCompactTime\": " << compactSecs_ << ",\n"
-     << "\t\t\t\"fullSurvivalPct\": " << fullSurvivalPct;
-
-  if (trailingComma) {
-    os << ",";
-  }
-  os << "\n";
+  json.emitKeyValue("fullMarkRootsTime", markRootsSecs_);
+  json.emitKeyValue("fullMarkTransitiveTime", markTransitiveSecs_);
+  json.emitKeyValue("fullSweepTime", sweepSecs_);
+  json.emitKeyValue("fullUpdateRefsTime", updateReferencesSecs_);
+  json.emitKeyValue("fullCompactTime", compactSecs_);
+  json.emitKeyValue("fullSurvivalPct", fullSurvivalPct);
 }
 
 GenGC::CollectionSection::CollectionSection(
@@ -1531,22 +1528,6 @@ GenGC::CollectionSection::~CollectionSection() {
   hermesLog(
       "HermesGC", "    used = %zu, heap size = %zu.", gc_->used(), gc_->size());
 #endif
-
-  if (gc_->analyticsCallback_) {
-    gc_->analyticsCallback_(GCAnalyticsEvent{
-        gc_->getName(),
-        "gengc",
-        cycle_.extraInfo(),
-        std::chrono::milliseconds(static_cast<std::chrono::milliseconds::rep>(
-            wallElapsedSecs_ * 1000)),
-        std::chrono::milliseconds(static_cast<std::chrono::milliseconds::rep>(
-            cpuElapsedSecs_ * 1000)),
-        /*preAllocated*/ usedBefore_,
-        /*preSize*/ sizeBefore_,
-        /*postAllocated*/ usedAfter_,
-        /*postSize*/ sizeAfter_,
-        /*survivalRatio*/ (usedAfter_ * 1.0) / usedBefore_});
-  }
 }
 
 void GenGC::CollectionSection::recordGCStats(
@@ -1562,28 +1543,25 @@ void GenGC::CollectionSection::recordGCStats(
   const std::chrono::microseconds cpuEnd = oscompat::thread_cpu_time();
   cpuElapsedSecs_ = GCBase::clockDiffSeconds(cpuStart_, cpuEnd);
 
-  usedBefore_ = usedBefore;
-  sizeBefore_ = sizeBefore;
-  usedAfter_ = usedAfter;
-  sizeAfter_ = sizeAfter;
-
   addArgD("gcCPUTime", cpuElapsedSecs_);
 
   // Record as an overall collection.
-  gc_->recordGCStats(
-      wallElapsedSecs_,
-      cpuElapsedSecs_,
-      gc_->sizeDirect(),
-      gcUsedBefore_,
-      gc_->usedDirect());
+  GCAnalyticsEvent event{
+      gc_->getName(),
+      "gengc",
+      cycle_.extraInfo(),
+      std::chrono::duration_cast<std::chrono::milliseconds>(
+          wallEnd - wallStart_),
+      std::chrono::duration_cast<std::chrono::milliseconds>(cpuEnd - cpuStart_),
+      /*preAllocated*/ usedBefore,
+      /*preSize*/ sizeBefore,
+      /*postAllocated*/ usedAfter,
+      /*postSize*/ sizeAfter,
+      /*survivalRatio*/ usedBefore ? (usedAfter * 1.0) / usedBefore : 0};
+
+  gc_->recordGCStats(event);
   // Also record as a region-specific collection.
-  gc_->recordGCStats(
-      wallElapsedSecs_,
-      cpuElapsedSecs_,
-      regionSize,
-      usedBefore,
-      usedAfter,
-      regionStats);
+  gc_->recordGCStats(event, regionStats);
 
   LLVM_DEBUG(
       dbgs() << "End garbage collection. numCollected="
