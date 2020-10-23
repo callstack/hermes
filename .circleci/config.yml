@@ -36,7 +36,6 @@ workflows:
             - package-apple-runtime
             - windows
       - test-linux
-      # - test-macos
       - test-e2e:
           requires:
             - npm
@@ -203,7 +202,7 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          key: v3-repo-{{ .Environment.CIRCLE_PR_NUMBER }}
+          key: v3-repo-{{ .Environment.CIRCLE_SHA1 }}
       - run:
           name: Install dependencies
           command: |
@@ -236,15 +235,17 @@ jobs:
     <<: *apple_defaults
     steps:
       - checkout
+      # TODO: Use a better cache key to avoid rebuilding whole framework
+      # when it is not necessary
       - restore_cache:
-          key: v3-repo-{{ .Environment.CIRCLE_PR_NUMBER }}
+          key: v3-repo-{{ .Environment.CIRCLE_SHA1 }}
       - run:
           name: Set up workspace
           command: mkdir -p /tmp/hermes/output
       - run:
           name: Install dependencies
           command: |
-            brew install cmake
+            brew install cmake ninja
             sudo gem install cocoapods
       - run:
           name: Build the iOS frameworks
@@ -253,7 +254,7 @@ jobs:
           name: Build the Mac frameworks
           command: ./utils/build-mac-framework.sh
       - save_cache:
-          key: v3-repo-{{ .Environment.CIRCLE_PR_NUMBER }}
+          key: v3-repo-{{ .Environment.CIRCLE_SHA1 }}
           paths:
             - ~/hermes/build_iphoneos
             - ~/hermes/build_iphonesimulator
@@ -265,7 +266,7 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          key: v3-repo-{{ .Environment.CIRCLE_PR_NUMBER }}
+          key: v3-repo-{{ .Environment.CIRCLE_SHA1 }}
       - run:
           name: Set up workspace
           command: mkdir -p /tmp/hermes/output
